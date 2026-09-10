@@ -1,2 +1,11 @@
+[project]
+name = "detector-de-imagenes"
+version = "0.1.0"
+description = "Detector de objetos con OpenAI y Vercel"
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=1.40.0"
+]
+
 [tool.vercel]
 entrypoint = "api.analyze:handler"
