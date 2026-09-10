@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VisionAI - Detector de Objetos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #090a0f;
+      --card-bg: rgba(18, 20, 29, 0.7);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.5);
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 650px;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+    .header { text-align: center; margin-bottom: 28px; }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.1);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      margin-bottom: 12px;
+    }
+    h1 { font-size: 1.8rem; margin-bottom: 6px; }
+    p.subtitle { color: var(--text-muted); font-size: 0.9rem; }
+    .dropzone {
+      border: 2px dashed var(--border-subtle);
+      border-radius: 14px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      background: rgba(255, 255, 255, 0.01);
+      transition: border-color 0.2s;
+    }
+    .dropzone:hover, .dropzone.dragover { border-color: #6366f1; }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .preview-container {
+      display: none;
+      position: relative;
+      margin-top: 14px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+    .preview-container img { width: 100%; max-height: 280px; object-fit: contain; background: #000; display: block; }
+    .btn-remove {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .field { margin-top: 20px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--border-focus); }
+    button#submitBtn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px;
+      background: var(--accent-gradient);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    button#submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result-box {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      display: none;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <span class="badge">GPT-4o Mini Vision</span>
+      <h1>Analizador Visual</h1>
+      <p class="subtitle">Sube una foto e indica qué objetos deseas localizar.</p>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="imageInput" accept="image/*" />
+      <div>Arrastra tu foto aquí o haz clic para seleccionarla</div>
+    </div>
+
+    <div class="preview-container" id="previewContainer">
+      <img id="previewImage" alt="Vista previa" />
+      <button type="button" class="btn-remove" id="btnRemove">Cambiar foto</button>
+    </div>
+
+    <div class="field">
+      <label for="promptInput">Objetos a buscar</label>
+      <input type="text" id="promptInput" placeholder="Ej: busca laptops, botellas o libros..." />
+    </div>
+
+    <button id="submitBtn" onclick="analizarFoto()">
+      <div class="spinner" id="spinner"></div>
+      <span id="btnText">Detectar Objetos</span>
+    </button>
+
+    <div class="result-box" id="resultContainer">
+      <div id="resultContent"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
